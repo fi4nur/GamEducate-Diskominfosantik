@@ -1,36 +1,102 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Gameducate 🎮📚
 
-## Getting Started
+**Gameducate** adalah platform pembelajaran berbasis gamifikasi yang menggabungkan mekanik permainan dengan pendidikan untuk meningkatkan engagement dan retensi pengetahuan pengguna.
 
-First, run the development server:
+## Deskripsi Project
+
+Gameducate adalah aplikasi web yang dirancang untuk membuat pembelajaran lebih interaktif dan menyenangkan melalui:
+
+- **Skill Tree System**: Sistem skill tree yang terinspirasi dari RPG untuk melacak dan mengembangkan kemampuan pengguna
+- **Gamified Learning**: Mekanik permainan seperti achievements, level up, dan rewards untuk memotivasi pengguna
+- **Statistics Tracking**: Sistem statistik untuk memantau progress pembelajaran
+- **Responsive UI**: Interface yang dibangun dengan React dan Next.js
+
+## Tech Stack
+
+- **Framework**: Next.js
+- **Frontend**: React
+- **Language**: JavaScript/TypeScript
+- **Styling**: CSS / globals.css
+- **Linting**: ESLint
+- **Package Manager**: npm
+
+## Project Structure (ringkasan)
+
+```
+app/
+components/
+data/
+public/
+package.json
+```
+
+## Menjalankan Secara Lokal
+
+1. Install dependencies
+
+```bash
+npm install
+```
+
+2. Jalankan development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Buka http://localhost:3000 di browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Cara Push Project Ini ke Repository GitHub Anda
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Jika ini adalah proyek baru dan Anda ingin saya bantu menyiapkannya untuk di-push, ikuti langkah ini di mesin Anda (ganti URL dengan repository Anda):
 
-## Learn More
+```bash
+# Inisialisasi git (jika belum ada)
+git init
+git add .
+git commit -m "Initial commit"
+git branch -M main
+# Tambahkan remote (ganti URL dengan repo Anda)
+git remote add origin https://github.com/USERNAME/REPO.git
+git push -u origin main
+```
 
-To learn more about Next.js, take a look at the following resources:
+Catatan: jika repositori belum dibuat di GitHub, buat repo baru dan salin URL remote yang disediakan GitHub.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Jika Anda ingin saya melakukan push untuk Anda, berikan URL remote repository dan akses (token atau instruksi), atau jalankan perintah di atas di mesin Anda.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## .gitignore yang disarankan
 
-## Deploy on Vercel
+Tambahkan file `.gitignore` dengan isi berikut untuk proyek Next.js / Node:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+node_modules/
+.next/
+out/
+dist/
+.env
+.env.local
+.env.*.local
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.vscode/
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
+
+## Contributing
+
+Kontribusi dan saran diterima. Proyek ini dibuat sebagai bagian dari ProgramMagang — Semester 6.
+
+---
+
+**Status**: 🚧 In Development
+
+Untuk pertanyaan atau bantuan push, kirimkan URL repository Anda.

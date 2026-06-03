@@ -1,26 +1,78 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  body {
+    @apply font-body text-surface-800 bg-white;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  ::selection {
+    @apply bg-brand-200 text-brand-900;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-surface-100;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-surface-300 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-surface-400;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .card-glass {
+    @apply bg-white/80 backdrop-blur-sm border border-surface-200/60 rounded-2xl shadow-sm;
+  }
+
+  .card-glass:hover {
+    @apply shadow-lg border-surface-300/80;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-6 py-3 bg-brand-800 text-white font-display font-semibold rounded-xl
+           hover:bg-brand-700 active:scale-[0.98] transition-all duration-200 shadow-md hover:shadow-lg;
+  }
+
+  .btn-outline {
+    @apply inline-flex items-center gap-2 px-6 py-3 bg-white text-surface-700 font-display font-semibold rounded-xl
+           border-2 border-surface-200 hover:border-brand-300 hover:text-brand-800 active:scale-[0.98] transition-all duration-200;
+  }
+
+  .section-title {
+    @apply font-display text-3xl md:text-4xl font-bold text-surface-900 text-center;
+  }
+
+  .section-subtitle {
+    @apply text-surface-500 text-center text-base md:text-lg max-w-2xl mx-auto mt-3;
+  }
+
+  .badge-tag {
+    @apply inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider;
+  }
+}
+
+@layer utilities {
+  .text-gradient-brand {
+    @apply bg-gradient-to-r from-brand-700 to-brand-500 bg-clip-text text-transparent;
+  }
+
+  .gradient-cta {
+    background: linear-gradient(135deg, #1a27c9 0%, #3b28d6 40%, #5b56fc 100%);
+  }
 }
