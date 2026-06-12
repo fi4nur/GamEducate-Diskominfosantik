@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Search } from "lucide-react";
+import { Menu, X, Search, User } from "lucide-react";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -29,6 +29,7 @@ export default function Navbar({ activePage }: NavbarProps) {
         home: "/",
         "learning-path": "/learning-path",
         leaderboard: "/leaderboard",
+        profile: "/profile",
       };
       return slugMap[activePage] === href;
     }
@@ -80,7 +81,7 @@ export default function Navbar({ activePage }: NavbarProps) {
             {/* Search */}
             <div className="flex items-center gap-2 px-3 py-1.5 bg-surface-50 border border-surface-200 rounded-lg text-surface-400 text-sm hover:border-brand-300 transition-colors cursor-pointer">
               <Search size={14} />
-              <span className="hidden lg:inline text-xs">Cari materi...</span>
+              <span className="hidden lg:inline text-xs">Cari Modul ...</span>
             </div>
 
             {/* Resources button */}
@@ -93,10 +94,18 @@ export default function Navbar({ activePage }: NavbarProps) {
               Resources
             </motion.a>
 
-            {/* Avatar */}
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-500 to-brand-800 flex items-center justify-center text-white text-sm font-bold shadow-md cursor-pointer hover:scale-105 transition-transform">
-              G
-            </div>
+            {/* Profile Link */}
+            <Link
+              href="/profile"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-900 hover:bg-surface-800 transition-colors duration-200 group"
+            >
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-brand-400 to-brand-700 flex items-center justify-center text-white shadow-sm">
+                <User size={14} />
+              </div>
+              <span className="text-xs font-display font-semibold text-white pr-1 hidden lg:inline">
+                Guest Profile
+              </span>
+            </Link>
           </div>
 
           {/* Mobile Hamburger */}
@@ -138,7 +147,15 @@ export default function Navbar({ activePage }: NavbarProps) {
                   {link.label}
                 </Link>
               ))}
-              <div className="pt-3 border-t border-surface-100">
+              <div className="pt-3 border-t border-surface-100 space-y-1">
+                <Link
+                  href="/profile"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-surface-600 hover:bg-surface-50 transition-all"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  <User size={16} />
+                  Profil Saya
+                </Link>
                 <a
                   href="#"
                   className="block px-4 py-2.5 text-sm text-white bg-brand-800 rounded-xl font-semibold hover:bg-brand-700 transition-colors"

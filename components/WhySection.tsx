@@ -44,6 +44,10 @@ const itemVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" as const } },
 };
 
+import Link from "next/link";
+
+const MotionLink = motion(Link);
+
 export default function WhySection() {
   return (
     <section className="py-20 md:py-28 bg-white" id="learning-path">
@@ -96,7 +100,7 @@ export default function WhySection() {
           >
             <div className="relative w-full h-full min-h-[280px]">
               <Image
-                src="/safe-security.png"
+                src="/digital_lit.png"
                 alt="Brankas keamanan digital"
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-500"
@@ -154,14 +158,14 @@ export default function WhySection() {
               Kami percaya pendidikan harus mudah diakses. Langsung masuk ke
               modul tanpa perlu repot mengisi formulir pendaftaran.
             </p>
-            <motion.a
-              href="#explore"
+            <MotionLink
+              href="/quiz"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="relative z-10 inline-flex items-center gap-2 px-5 py-2.5 bg-white/15 border border-white/30 text-white text-sm font-display font-semibold rounded-xl hover:bg-white/25 transition-all"
             >
               Eksplor Game
-            </motion.a>
+            </MotionLink>
           </motion.div>
         </motion.div>
       </div>

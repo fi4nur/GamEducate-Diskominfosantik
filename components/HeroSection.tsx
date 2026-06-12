@@ -3,20 +3,28 @@
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export default function HeroSection() {
+  const router = useRouter();
+
+  const handleNavigate = (path: string) => {
+    console.log(`Navigating to: ${path}`);
+    router.push(path);
+  };
+
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-surface-50 to-white">
-      {/* Subtle background pattern */}
+      {/* Background pattern - dengan pointer-events-none */}
       <div
-        className="absolute inset-0 opacity-[0.03]"
+        className="absolute inset-0 opacity-[0.03] pointer-events-none"
         style={{
           backgroundImage: `radial-gradient(circle at 1px 1px, #1a27c9 1px, transparent 0)`,
           backgroundSize: "40px 40px",
         }}
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Left Content */}
           <motion.div
@@ -24,7 +32,6 @@ export default function HeroSection() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.7, ease: "easeOut" }}
           >
-            {/* Badge */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -35,37 +42,37 @@ export default function HeroSection() {
               BELAJAR SAMBIL BERMAIN
             </motion.div>
 
-            {/* Heading */}
             <h1 className="font-display text-4xl sm:text-5xl lg:text-[3.5rem] font-extrabold text-surface-900 leading-[1.1] mb-5">
               Jadilah Jagoan Digital{" "}
               <span className="text-gradient-brand">Tanpa Batas!</span>
             </h1>
 
-            {/* Subtitle */}
             <p className="text-surface-500 text-lg md:text-xl leading-relaxed mb-8 max-w-lg">
               Belajar keamanan internet, cara mengenali hoax, dan etika digital
               lewat game seru. Gratis dan tanpa daftar!
             </p>
 
-            {/* CTA Buttons */}
             <div className="flex flex-wrap gap-4">
-              <motion.a
-                href="#learning-path"
+              <motion.button
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.97 }}
-                className="btn-primary"
+                onClick={() => handleNavigate("/learning-path")}
+                className="btn-primary inline-flex items-center justify-center gap-2 cursor-pointer relative z-20"
+                style={{ cursor: "pointer" }}
               >
                 Mulai Belajar
                 <ArrowRight size={18} />
-              </motion.a>
-              <motion.a
-                href="/quiz"
+              </motion.button>
+
+              <motion.button
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.97 }}
-                className="btn-outline"
+                onClick={() => handleNavigate("/quiz")}
+                className="btn-outline inline-flex items-center justify-center gap-2 cursor-pointer relative z-20"
+                style={{ cursor: "pointer" }}
               >
                 🎯 Coba Quiz
-              </motion.a>
+              </motion.button>
             </div>
           </motion.div>
 
@@ -77,8 +84,7 @@ export default function HeroSection() {
             className="relative flex justify-center lg:justify-end"
           >
             <div className="relative w-full max-w-md lg:max-w-lg">
-              {/* Glow background */}
-              <div className="absolute inset-0 bg-gradient-to-br from-brand-400/20 to-brand-800/20 rounded-3xl blur-3xl" />
+              <div className="absolute inset-0 bg-gradient-to-br from-brand-400/20 to-brand-800/20 rounded-3xl blur-3xl pointer-events-none" />
               <motion.div
                 animate={{ y: [0, -12, 0] }}
                 transition={{
@@ -88,7 +94,7 @@ export default function HeroSection() {
                 }}
               >
                 <Image
-                  src="/safe-security.png"
+                  src="/edu_lit.png"
                   alt="Robot mentor digital Gameducate"
                   width={520}
                   height={520}

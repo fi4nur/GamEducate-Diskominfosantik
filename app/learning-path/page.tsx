@@ -16,9 +16,13 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
 
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+
 const missions = [
   {
     id: 1,
+    slug: "keamanan-password",
     icon: Lock,
     difficulty: "Mudah",
     difficultyColor: "bg-accent-200 text-amber-700",
@@ -26,11 +30,10 @@ const missions = [
     title: "Keamanan Password",
     description:
       "Pelajari cara membuat benteng pertahanan digital yang tidak bisa ditembus oleh hacker.",
-    completed: false,
-    locked: false,
   },
   {
     id: 2,
+    slug: "detektif-hoax",
     icon: Eye,
     difficulty: "Sedang",
     difficultyColor: "bg-orange-100 text-orange-700",
@@ -38,11 +41,10 @@ const missions = [
     title: "Detektif Hoax",
     description:
       "Jadilah agen rahasia yang mampu membedakan fakta dan berita bohong di internet.",
-    completed: false,
-    locked: false,
   },
   {
     id: 3,
+    slug: "jejak-digital",
     icon: Shield,
     difficulty: "Mudah",
     difficultyColor: "bg-accent-200 text-amber-700",
@@ -50,11 +52,10 @@ const missions = [
     title: "Jejak Digital",
     description:
       "Lihat bagaimana bayanganmu tertinggal di internet dan cara menjaganya tetap bersih.",
-    completed: false,
-    locked: false,
   },
   {
     id: 4,
+    slug: "etika-chatting",
     icon: MessageSquare,
     difficulty: "Mudah",
     difficultyColor: "bg-accent-200 text-amber-700",
@@ -62,11 +63,10 @@ const missions = [
     title: "Etika Chatting",
     description:
       "Belajar cara berkomunikasi yang sopan dan menyenangkan di ruang obrolan digital.",
-    completed: false,
-    locked: false,
   },
   {
     id: 5,
+    slug: "privasi-data",
     icon: EyeOff,
     difficulty: "Sedang",
     difficultyColor: "bg-orange-100 text-orange-700",
@@ -74,11 +74,10 @@ const missions = [
     title: "Privasi Data",
     description:
       "Lindungi informasi pribadimu agar tidak jatuh ke tangan orang yang salah.",
-    completed: false,
-    locked: false,
   },
   {
     id: 6,
+    slug: "phishing-alert",
     icon: Fish,
     difficulty: "Sulit",
     difficultyColor: "bg-red-100 text-red-700",
@@ -86,13 +85,37 @@ const missions = [
     title: "Phishing Alert",
     description:
       "Waspadai umpan berbahaya! Belajar mengenali link dan email palsu yang menipu.",
-    completed: false,
-    locked: false,
   },
 ];
 
 export default function LearningPathPage() {
-  const completedCount = missions.filter((m) => m.completed).length;
+  const router = useRouter();
+  const [completedSlugs, setCompletedSlugs] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    try {
+      const storedResults = localStorage.getItem("gameducate_quiz_results");
+      if (storedResults) {
+        const results = JSON.parse(storedResults);
+        const completedMap: Record<string, boolean> = {};
+        Object.keys(results).forEach((key) => {
+          if (results[key]?.completed) {
+            completedMap[key] = true;
+          }
+        });
+        setCompletedSlugs(completedMap);
+      }
+    } catch (e) {
+      console.error("Error reading localStorage", e);
+    }
+  }, []);
+
+  const completedCount = missions.filter((m) => completedSlugs[m.slug]).length;
+
+  const handleStartQuiz = (slug: string) => {
+    sessionStorage.setItem("fromLearningPath", "true");
+    router.push(`/learning-path/quiz/${slug}`);
+  };
 
   return (
     <main className="min-h-screen bg-surface-50">
@@ -152,6 +175,8 @@ export default function LearningPathPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {missions.map((mission, i) => {
             const Icon = mission.icon;
+            const isCompleted = !!completedSlugs[mission.slug];
+
             return (
               <motion.div
                 key={mission.id}
@@ -196,12 +221,17 @@ export default function LearningPathPage() {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.97 }}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-brand-800 text-white text-sm font-semibold font-display rounded-xl hover:bg-brand-700 transition-colors duration-200 shadow-md hover:shadow-lg"
+                  onClick={() => handleStartQuiz(mission.slug)}
+                  className={`w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold font-display rounded-xl transition-colors duration-200 shadow-md hover:shadow-lg ${
+                    isCompleted 
+                      ? "bg-emerald-600 hover:bg-emerald-500 text-white" 
+                      : "bg-brand-800 text-white hover:bg-brand-700"
+                  }`}
                 >
-                  {mission.completed ? (
+                  {isCompleted ? (
                     <>
                       <CheckCircle2 size={16} />
-                      Selesai
+                      Selesai (Ulangi)
                     </>
                   ) : (
                     <>
