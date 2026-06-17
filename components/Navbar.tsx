@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Search, User } from "lucide-react";
+import { Menu, X, Search, User, LogIn, LogOut, ChevronDown } from "lucide-react";
+import { auth } from "@/utils/firebase/client";
+import { onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
+import { handleLogout } from "@/utils/userDataSync";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -20,7 +23,42 @@ interface NavbarProps {
 
 export default function Navbar({ activePage }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const onLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await handleLogout();
+      router.push("/login");
+    } catch (err) {
+      console.error("Logout error:", err);
+      setLoggingOut(false);
+    }
+  };
 
   const isActive = (href: string) => {
     if (activePage) {
@@ -94,18 +132,86 @@ export default function Navbar({ activePage }: NavbarProps) {
               Resources
             </motion.a>
 
-            {/* Profile Link */}
-            <Link
-              href="/profile"
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-900 hover:bg-surface-800 transition-colors duration-200 group"
-            >
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-brand-400 to-brand-700 flex items-center justify-center text-white shadow-sm">
-                <User size={14} />
+            {/* Profile / Login */}
+            {user ? (
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-900 hover:bg-surface-800 transition-colors duration-200 group"
+                >
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-brand-400 to-brand-700 flex items-center justify-center text-white shadow-sm overflow-hidden">
+                    {user.photoURL ? (
+                      <img src={user.photoURL} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <User size={14} />
+                    )}
+                  </div>
+                  <span className="text-xs font-display font-semibold text-white pr-1 hidden lg:inline">
+                    {user.displayName || user.email?.split('@')[0] || "Profil Saya"}
+                  </span>
+                  <ChevronDown
+                    size={12}
+                    className={`text-white/70 transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
+
+                {/* Dropdown Menu */}
+                <AnimatePresence>
+                  {dropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 mt-2 w-52 bg-white rounded-xl border border-surface-200 shadow-xl overflow-hidden z-50"
+                    >
+                      {/* User info header */}
+                      <div className="px-4 py-3 border-b border-surface-100 bg-surface-50">
+                        <p className="text-sm font-display font-bold text-surface-900 truncate">
+                          {user.displayName || "Pengguna"}
+                        </p>
+                        <p className="text-[10px] text-surface-400 truncate">
+                          {user.email}
+                        </p>
+                      </div>
+
+                      {/* Menu items */}
+                      <div className="py-1">
+                        <Link
+                          href="/profile"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-surface-700 hover:bg-surface-50 transition-colors"
+                        >
+                          <User size={16} className="text-surface-400" />
+                          Profil Saya
+                        </Link>
+                        <button
+                          onClick={() => {
+                            setDropdownOpen(false);
+                            onLogout();
+                          }}
+                          disabled={loggingOut}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+                        >
+                          <LogOut size={16} />
+                          {loggingOut ? "Keluar..." : "Keluar"}
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
-              <span className="text-xs font-display font-semibold text-white pr-1 hidden lg:inline">
-                Guest Profile
-              </span>
-            </Link>
+            ) : (
+              <Link
+                href="/login"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-800 hover:bg-brand-700 text-white transition-colors duration-200 group"
+              >
+                <LogIn size={16} />
+                <span className="text-sm font-display font-semibold hidden lg:inline">
+                  Masuk
+                </span>
+              </Link>
+            )}
           </div>
 
           {/* Mobile Hamburger */}
@@ -148,14 +254,38 @@ export default function Navbar({ activePage }: NavbarProps) {
                 </Link>
               ))}
               <div className="pt-3 border-t border-surface-100 space-y-1">
-                <Link
-                  href="/profile"
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-surface-600 hover:bg-surface-50 transition-all"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  <User size={16} />
-                  Profil Saya
-                </Link>
+                {user ? (
+                  <>
+                    <Link
+                      href="/profile"
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-surface-600 hover:bg-surface-50 transition-all"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      <User size={16} />
+                      Profil Saya
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setMobileOpen(false);
+                        onLogout();
+                      }}
+                      disabled={loggingOut}
+                      className="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-all disabled:opacity-50"
+                    >
+                      <LogOut size={16} />
+                      {loggingOut ? "Keluar..." : "Keluar"}
+                    </button>
+                  </>
+                ) : (
+                  <Link
+                    href="/login"
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-brand-800 hover:bg-brand-50 transition-all"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    <LogIn size={16} />
+                    Masuk / Daftar
+                  </Link>
+                )}
                 <a
                   href="#"
                   className="block px-4 py-2.5 text-sm text-white bg-brand-800 rounded-xl font-semibold hover:bg-brand-700 transition-colors"

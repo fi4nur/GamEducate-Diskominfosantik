@@ -18,6 +18,9 @@ import Footer from "@/components/Footer";
 
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import { auth, database } from "@/utils/firebase/client";
+import { onAuthStateChanged } from "firebase/auth";
+import { ref, get } from "firebase/database";
 
 const missions = [
   {
@@ -93,21 +96,53 @@ export default function LearningPathPage() {
   const [completedSlugs, setCompletedSlugs] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    try {
-      const storedResults = localStorage.getItem("gameducate_quiz_results");
-      if (storedResults) {
-        const results = JSON.parse(storedResults);
-        const completedMap: Record<string, boolean> = {};
-        Object.keys(results).forEach((key) => {
-          if (results[key]?.completed) {
-            completedMap[key] = true;
-          }
-        });
-        setCompletedSlugs(completedMap);
+    const readFromLocal = () => {
+      try {
+        const storedResults = localStorage.getItem("gameducate_quiz_results");
+        if (storedResults) {
+          const results = JSON.parse(storedResults);
+          const completedMap: Record<string, boolean> = {};
+          Object.keys(results).forEach((key) => {
+            if (results[key]?.completed) {
+              completedMap[key] = true;
+            }
+          });
+          setCompletedSlugs(completedMap);
+        }
+      } catch (e2) {
+        console.error("Error reading localStorage fallback", e2);
       }
-    } catch (e) {
-      console.error("Error reading localStorage", e);
-    }
+    };
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const dbRef = ref(database, `users/${user.uid}/module_progress`);
+          const snapshot = await get(dbRef);
+          
+          if (snapshot.exists()) {
+            const moduleProgress = snapshot.val() as Record<string, { completed?: boolean }>;
+            const completedMap: Record<string, boolean> = {};
+            Object.keys(moduleProgress).forEach((key) => {
+              if (moduleProgress[key]?.completed) {
+                completedMap[key] = true;
+              }
+            });
+            setCompletedSlugs(completedMap);
+            localStorage.setItem("gameducate_quiz_results", JSON.stringify(moduleProgress));
+          } else {
+            readFromLocal();
+          }
+        } catch (e) {
+          console.error("Error fetching progress from Firebase", e);
+          readFromLocal();
+        }
+      } else {
+        readFromLocal();
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const completedCount = missions.filter((m) => completedSlugs[m.slug]).length;

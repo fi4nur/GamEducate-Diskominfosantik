@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Star,
@@ -18,6 +18,8 @@ import {
 import { useRouter } from "next/navigation";
 import { moduleQuizzes, type ModuleQuestion, type ModuleQuiz } from "@/data/moduleQuizData";
 import { getProfile, saveProfile, type GuestProfile, type ActivityItem } from "@/data/profileData";
+import { auth } from "@/utils/firebase/client";
+import { saveUserProgress, type ModuleResult } from "@/utils/userDataSync";
 
 interface ModuleQuizGameProps {
   moduleSlug: string;
@@ -39,6 +41,9 @@ export default function ModuleQuizGame({ moduleSlug }: ModuleQuizGameProps) {
   const [streak, setStreak] = useState(0);
   const [feedbackShake, setFeedbackShake] = useState(false);
   const [showTip, setShowTip] = useState(false);
+
+  // Timer to track real learning time
+  const startTimeRef = useRef<number>(Date.now());
 
   // If slug doesn't match any quiz
   if (!quiz) {
@@ -97,8 +102,10 @@ export default function ModuleQuizGame({ moduleSlug }: ModuleQuizGameProps) {
   // Handle saving profile upon completion
   useEffect(() => {
     if (phase === "complete") {
-      const profile = getProfile();
-      if (profile) {
+      const saveCompletionData = async () => {
+        const profile = getProfile();
+        if (!profile) return;
+
         // Map module to badge ID
         const slugToBadgeId: Record<string, string> = {
           "keamanan-password": "security-ace",
@@ -110,10 +117,14 @@ export default function ModuleQuizGame({ moduleSlug }: ModuleQuizGameProps) {
         };
 
         const badgeId = slugToBadgeId[moduleSlug];
+
+        // Calculate real elapsed time in minutes
+        const elapsedMs = Date.now() - startTimeRef.current;
+        const elapsedMinutes = Math.max(1, Math.round(elapsedMs / 60000));
         
         // 1. Mark module as completed in localStorage quiz results
         const storedResults = localStorage.getItem("gameducate_quiz_results");
-        const results = storedResults ? JSON.parse(storedResults) : {};
+        const results: Record<string, ModuleResult> = storedResults ? JSON.parse(storedResults) : {};
         results[moduleSlug] = {
           completed: true,
           score: score,
@@ -147,8 +158,8 @@ export default function ModuleQuizGame({ moduleSlug }: ModuleQuizGameProps) {
         );
         profile.stats.quizAccuracy = isNaN(newAccuracy) ? 100 : newAccuracy;
         
-        // Update study duration
-        profile.stats.learningTimeMinutes += 15;
+        // Update study duration with real elapsed time
+        profile.stats.learningTimeMinutes += elapsedMinutes;
 
         // Upgrade corresponding badge level
         if (badgeId) {
@@ -184,7 +195,19 @@ export default function ModuleQuizGame({ moduleSlug }: ModuleQuizGameProps) {
         profile.activities = profile.activities.slice(0, 10);
 
         saveProfile(profile);
-      }
+
+        // 3. Sync to Firebase if user is logged in
+        try {
+          const currentUser = auth.currentUser;
+          if (currentUser) {
+            await saveUserProgress(currentUser.uid, profile, results);
+          }
+        } catch (err) {
+          console.error("Failed to sync to Firebase:", err);
+        }
+      };
+
+      saveCompletionData();
     }
   }, [phase, moduleSlug, quiz.moduleTitle, score, correctCount, totalQuestions]);
 
@@ -196,6 +219,7 @@ export default function ModuleQuizGame({ moduleSlug }: ModuleQuizGameProps) {
     setSelectedIdx(null);
     setCorrectCount(0);
     setStreak(0);
+    startTimeRef.current = Date.now(); // Reset timer
   };
 
   const isCorrectAnswer = selectedIdx === question.correctIndex;

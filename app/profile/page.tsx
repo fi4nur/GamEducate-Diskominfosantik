@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Eye,
@@ -14,11 +15,11 @@ import {
   BookOpen,
   Target,
   Clock,
-  AlertCircle,
   ChevronRight,
   Sparkles,
   Star,
   Zap,
+  LogOut,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -30,6 +31,9 @@ import {
   type Badge as BadgeType,
   type ActivityItem,
 } from "@/data/profileData";
+import { auth } from "@/utils/firebase/client";
+import { onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
+import { loadUserProfile, handleLogout } from "@/utils/userDataSync";
 
 /* ─── Icon map ─────────────────────────────────────────────── */
 const ICON_MAP: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
@@ -113,39 +117,53 @@ function badgeColors(color: string, unlocked: boolean) {
   return map[color] ?? map.brand;
 }
 
-/* ─── Animated counter hook ────────────────────────────────── */
-function useCounter(end: number, duration = 1200) {
-  const [value, setValue] = useState(0);
-  useEffect(() => {
-    let start = 0;
-    const step = end / (duration / 16);
-    const timer = setInterval(() => {
-      start += step;
-      if (start >= end) {
-        setValue(end);
-        clearInterval(timer);
-      } else {
-        setValue(Math.floor(start));
-      }
-    }, 16);
-    return () => clearInterval(timer);
-  }, [end, duration]);
-  return value;
-}
-
 /* ═══════════════════════════════════════════════════════════════
    PROFILE PAGE
    ═══════════════════════════════════════════════════════════════ */
 export default function ProfilePage() {
   const [profile, setProfile] = useState<GuestProfile | null>(null);
   const [showAllBadges, setShowAllBadges] = useState(false);
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
-    setProfile(getProfile());
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
+
+      if (currentUser) {
+        // Logged-in user — sync with Firebase
+        const displayName =
+          currentUser.displayName ||
+          currentUser.email?.split("@")[0] ||
+          "Pengguna";
+        const avatarUrl = currentUser.photoURL || null;
+        const syncedProfile = await loadUserProfile(currentUser.uid, displayName, avatarUrl);
+        setProfile(syncedProfile);
+      } else {
+        // Guest — use localStorage
+        setProfile(getProfile());
+      }
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  /* ── SSR placeholder ───────────────────────────────────────── */
-  if (!profile) {
+  const onLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await handleLogout();
+      router.push("/login");
+    } catch (err) {
+      console.error("Logout error:", err);
+      setLoggingOut(false);
+    }
+  };
+
+  /* ── Loading placeholder ───────────────────────────────────── */
+  if (isLoading || !profile) {
     return (
       <main className="min-h-screen bg-surface-50">
         <Navbar activePage="profile" />
@@ -160,8 +178,16 @@ export default function ProfilePage() {
     );
   }
 
-  const xpPercent = Math.round((profile.xp / profile.xpToNextLevel) * 100);
+  const xpPercent = profile.xpToNextLevel > 0 ? Math.round((profile.xp / profile.xpToNextLevel) * 100) : 0;
   const visibleBadges = showAllBadges ? profile.badges : profile.badges.slice(0, 4);
+
+  // Display name: prefer Google name, fallback to profile
+  const displayName = user
+    ? user.displayName || user.email?.split("@")[0] || profile.displayName
+    : profile.displayName;
+
+  // Avatar initial
+  const avatarUrl = user?.photoURL || null;
 
   return (
     <main className="min-h-screen bg-surface-50">
@@ -188,9 +214,13 @@ export default function ProfilePage() {
             {/* Avatar */}
             <div className="relative shrink-0">
               <div className="w-28 h-28 md:w-32 md:h-32 rounded-full border-4 border-yellow-400 shadow-xl overflow-hidden bg-gradient-to-br from-brand-300 to-brand-700 flex items-center justify-center">
-                <span className="text-4xl md:text-5xl font-display font-extrabold text-white/90 select-none">
-                  {profile.displayName.charAt(0)}
-                </span>
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-4xl md:text-5xl font-display font-extrabold text-white/90 select-none">
+                    {displayName.charAt(0)}
+                  </span>
+                )}
               </div>
               {/* Level badge on avatar */}
               <motion.div
@@ -211,7 +241,7 @@ export default function ProfilePage() {
             {/* Info */}
             <div className="flex-1 text-center md:text-left">
               <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-extrabold text-white leading-tight mb-1">
-                {profile.displayName}
+                {displayName}
               </h1>
               <p className="text-brand-200 font-display font-semibold text-sm md:text-base mb-4">
                 {profile.title}
@@ -238,7 +268,7 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Streak + Rank */}
+              {/* Streak + Rank + Logout */}
               <div className="flex items-center justify-center md:justify-start gap-8">
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
@@ -268,13 +298,33 @@ export default function ProfilePage() {
                   <div className="flex items-center gap-1.5 mb-0.5">
                     <Trophy size={18} className="text-yellow-400" />
                     <span className="font-display text-2xl font-extrabold text-white">
-                      #{profile.globalRank}
+                      #{profile.globalRank || "-"}
                     </span>
                   </div>
                   <span className="text-[10px] font-bold text-brand-300 uppercase tracking-widest">
                     Peringkat Global
                   </span>
                 </motion.div>
+
+                {/* Logout button in header */}
+                {user && (
+                  <>
+                    <div className="w-px h-10 bg-white/20" />
+                    <motion.button
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.7 }}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={onLogout}
+                      disabled={loggingOut}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-display font-semibold transition-all disabled:opacity-50"
+                    >
+                      <LogOut size={16} />
+                      {loggingOut ? "Keluar..." : "Keluar"}
+                    </motion.button>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>
@@ -350,53 +400,87 @@ export default function ProfilePage() {
             <h2 className="font-display text-xl font-bold text-surface-900 mb-6">
               Aktivitas Terbaru
             </h2>
-            <div className="space-y-0">
-              {profile.activities.map((act, i) => (
-                <ActivityRow key={act.id} activity={act} index={i} isLast={i === profile.activities.length - 1} />
-              ))}
-            </div>
+            {profile.activities.length > 0 ? (
+              <div className="space-y-0">
+                {profile.activities.map((act, i) => (
+                  <ActivityRow key={act.id} activity={act} index={i} isLast={i === profile.activities.length - 1} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-10 text-surface-400">
+                <Sparkles size={32} className="mx-auto mb-3 text-surface-300" />
+                <p className="text-sm font-medium">Belum ada aktivitas</p>
+                <p className="text-xs mt-1">Mulai belajar untuk melihat aktivitasmu di sini!</p>
+              </div>
+            )}
           </div>
         </div>
       </section>
 
       {/* ══════════════════════════════════════════════════════════
-          SECTION 4 — Guest Mode Warning
+          SECTION 4 — Account Status Banner
          ══════════════════════════════════════════════════════════ */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-14">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="relative overflow-hidden rounded-2xl bg-surface-50 border-2 border-surface-200 p-5 sm:p-7"
-        >
-          {/* Subtle pattern bg */}
-          <div className="absolute top-0 right-0 w-40 h-40 bg-amber-100 rounded-full blur-3xl opacity-40 -translate-y-1/2 translate-x-1/2" />
-
-          <div className="relative z-10 flex items-start gap-4">
-            <div className="shrink-0 w-10 h-10 rounded-full bg-amber-100 border border-amber-200 flex items-center justify-center">
-              <AlertCircle size={20} className="text-amber-600" />
+        {user ? (
+          /* Logged-in user banner */
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="relative overflow-hidden rounded-2xl bg-emerald-50 border-2 border-emerald-200 p-5 sm:p-7"
+          >
+            <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-100 rounded-full blur-3xl opacity-40 -translate-y-1/2 translate-x-1/2" />
+            <div className="relative z-10 flex items-start gap-4">
+              <div className="shrink-0 w-10 h-10 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center">
+                <Shield size={20} className="text-emerald-600" />
+              </div>
+              <div>
+                <h3 className="font-display font-bold text-surface-900 text-base mb-1">
+                  Akun Google Terhubung ✓
+                </h3>
+                <p className="text-sm text-surface-500 leading-relaxed">
+                  Progresmu tersimpan dengan aman di cloud. Kamu bisa login dari perangkat mana saja
+                  dan melanjutkan perjalanan belajarmu.
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-display font-bold text-surface-900 text-base mb-1">
-                Mode Tamu Aktif
-              </h3>
-              <p className="text-sm text-surface-500 leading-relaxed">
-                Progres Anda hanya disimpan di perangkat ini selama sesi berlangsung.
-                Hubungkan ke akun sekolah untuk menyimpan progres selamanya dan
-                berkolaborasi dengan teman.
-              </p>
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-brand-800 text-white text-sm font-display font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-md"
-              >
-                Hubungkan Akun
-                <ChevronRight size={16} />
-              </motion.button>
+          </motion.div>
+        ) : (
+          /* Guest mode banner */
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="relative overflow-hidden rounded-2xl bg-surface-50 border-2 border-surface-200 p-5 sm:p-7"
+          >
+            <div className="absolute top-0 right-0 w-40 h-40 bg-amber-100 rounded-full blur-3xl opacity-40 -translate-y-1/2 translate-x-1/2" />
+            <div className="relative z-10 flex items-start gap-4">
+              <div className="shrink-0 w-10 h-10 rounded-full bg-amber-100 border border-amber-200 flex items-center justify-center">
+                <Shield size={20} className="text-amber-600" />
+              </div>
+              <div>
+                <h3 className="font-display font-bold text-surface-900 text-base mb-1">
+                  Mode Tamu Aktif
+                </h3>
+                <p className="text-sm text-surface-500 leading-relaxed">
+                  Progres Anda hanya disimpan di perangkat ini selama sesi berlangsung.
+                  Hubungkan ke akun Google untuk menyimpan progres selamanya.
+                </p>
+                <motion.a
+                  href="/login"
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-brand-800 text-white text-sm font-display font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-md"
+                >
+                  Hubungkan Akun
+                  <ChevronRight size={16} />
+                </motion.a>
+              </div>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        )}
       </section>
 
       <Footer />

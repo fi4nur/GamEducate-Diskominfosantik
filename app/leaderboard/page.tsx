@@ -13,78 +13,18 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { useState, useEffect } from "react";
+import { auth, database } from "@/utils/firebase/client";
+import { onAuthStateChanged } from "firebase/auth";
+import { ref, get } from "firebase/database";
+import { getProfile, type GuestProfile } from "@/data/profileData";
+import { FirebaseUserProfile } from "@/utils/userDataSync";
 
-const topThree = [
-  {
-    rank: 2,
-    name: "Anon-88",
-    xp: 1240,
-    avatarColor: "from-surface-300 to-surface-500",
-    initials: "A8",
-    borderColor: "border-surface-300",
-    highlight: false,
-    size: "small",
-  },
-  {
-    rank: 1,
-    name: "User-X",
-    xp: 1450,
-    avatarColor: "from-brand-500 to-brand-800",
-    initials: "UX",
-    borderColor: "border-accent-400",
-    highlight: true,
-    size: "large",
-  },
-  {
-    rank: 3,
-    name: "Anon-12",
-    xp: 980,
-    avatarColor: "from-surface-300 to-surface-500",
-    initials: "A1",
-    borderColor: "border-brand-300",
-    highlight: false,
-    size: "small",
-  },
-];
-
-const leaderboardRows = [
-  {
-    rank: 4,
-    name: "Anon-72",
-    subtitle: "Level 12 • Junior Guardian",
-    xp: 820,
-    isCurrentUser: true,
-  },
-  { rank: 5, name: "Anon-44", subtitle: "Level 11", xp: 790, isCurrentUser: false },
-  { rank: 6, name: "User-Beta", subtitle: "Level 10", xp: 715, isCurrentUser: false },
-  { rank: 7, name: "Anon-102", subtitle: "Level 9", xp: 680, isCurrentUser: false },
-];
-
-const badges = [
-  {
-    icon: Shield,
-    label: "Penjaga Privasi",
-    earned: true,
-    color: "from-brand-600 to-brand-800",
-  },
-  {
-    icon: Award,
-    label: "Etika Emas",
-    earned: true,
-    color: "from-brand-500 to-brand-700",
-  },
-  {
-    icon: Lock,
-    label: "Pemburu Hoax",
-    earned: false,
-    color: "from-surface-400 to-surface-600",
-  },
-  {
-    icon: Wifi,
-    label: "Master Koneksi",
-    earned: false,
-    color: "from-surface-400 to-surface-600",
-  },
+const badgesTemplate = [
+  { icon: Shield, label: "Penjaga Privasi", earned: false, color: "from-brand-600 to-brand-800" },
+  { icon: Award, label: "Etika Emas", earned: false, color: "from-brand-500 to-brand-700" },
+  { icon: Lock, label: "Pemburu Hoax", earned: false, color: "from-surface-400 to-surface-600" },
+  { icon: Wifi, label: "Master Koneksi", earned: false, color: "from-surface-400 to-surface-600" },
 ];
 
 const rankMedalColors: Record<number, string> = {
@@ -94,9 +34,117 @@ const rankMedalColors: Record<number, string> = {
 };
 
 export default function LeaderboardPage() {
-  const userLevel = 12;
-  const currentXP = 820;
-  const nextLevelXP = 1000;
+  const [topThree, setTopThree] = useState<any[]>([]);
+  const [leaderboardRows, setLeaderboardRows] = useState<any[]>([]);
+  const [currentUserData, setCurrentUserData] = useState<any>(null);
+  const [badges, setBadges] = useState(badgesTemplate);
+
+  useEffect(() => {
+    const fetchLeaderboard = async (currentUid?: string) => {
+      try {
+        const dbRef = ref(database, 'users');
+        const snapshot = await get(dbRef);
+        let usersList: any[] = [];
+        
+        if (snapshot.exists()) {
+          const usersObj = snapshot.val();
+          Object.keys(usersObj).forEach(key => {
+            const u = usersObj[key] as FirebaseUserProfile;
+            // Calculate XP roughly or just use level to sort
+            // In a real app we'd save total XP in Firebase
+            let xp = 0;
+            if (u.module_progress) {
+              Object.values(u.module_progress).forEach((m: any) => {
+                if (m.completed) xp += m.score || 0;
+              });
+            }
+            usersList.push({
+              uid: key,
+              name: u.full_name || "Anon",
+              xp: xp,
+              level: u.xp_level || 1,
+            });
+          });
+          
+          usersList.sort((a, b) => b.xp - a.xp);
+        }
+
+        // Top 3
+        const top3 = usersList.slice(0, 3).map((u, i) => {
+          let rank = i + 1;
+          // Reorder for podium: 2, 1, 3
+          let podiumRank = i === 0 ? 2 : i === 1 ? 1 : 3;
+          let actualUser = usersList[podiumRank - 1] || u;
+          if (!actualUser) return null;
+          
+          return {
+            rank: podiumRank,
+            name: actualUser.name,
+            xp: actualUser.xp,
+            avatarColor: podiumRank === 1 ? "from-brand-500 to-brand-800" : "from-surface-300 to-surface-500",
+            initials: actualUser.name.substring(0, 2).toUpperCase(),
+            borderColor: podiumRank === 1 ? "border-accent-400" : podiumRank === 2 ? "border-surface-300" : "border-brand-300",
+            highlight: podiumRank === 1,
+            size: podiumRank === 1 ? "large" : "small",
+          };
+        }).filter(Boolean);
+        
+        // Re-sort top3 array to be [2nd, 1st, 3rd] for display
+        const displayTop3 = [];
+        if (top3.find(u => u?.rank === 2)) displayTop3.push(top3.find(u => u?.rank === 2));
+        if (top3.find(u => u?.rank === 1)) displayTop3.push(top3.find(u => u?.rank === 1));
+        if (top3.find(u => u?.rank === 3)) displayTop3.push(top3.find(u => u?.rank === 3));
+        
+        setTopThree(displayTop3);
+
+        // Rows
+        const rows = usersList.slice(3, 10).map((u, i) => ({
+          rank: i + 4,
+          name: u.name,
+          subtitle: `Level ${u.level}`,
+          xp: u.xp,
+          isCurrentUser: u.uid === currentUid,
+        }));
+        setLeaderboardRows(rows);
+
+        if (currentUid) {
+          const myUser = usersList.find(u => u.uid === currentUid);
+          if (myUser) setCurrentUserData(myUser);
+        }
+      } catch (err) {
+        console.error("Error fetching leaderboard", err);
+      }
+    };
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      fetchLeaderboard(user?.uid);
+      
+      // Local profile for current user badges & progress
+      const localProfile = getProfile();
+      if (localProfile) {
+        if (!user && !currentUserData) {
+          setCurrentUserData({
+            level: localProfile.level,
+            xp: localProfile.xp,
+            xpToNextLevel: localProfile.xpToNextLevel
+          });
+        }
+        
+        const earnedCount = localProfile.badges.filter(b => b.level > 0).length;
+        setBadges(badgesTemplate.map((b, i) => ({
+          ...b,
+          earned: i < earnedCount,
+          color: i < earnedCount ? "from-brand-600 to-brand-800" : "from-surface-400 to-surface-600"
+        })));
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const userLevel = currentUserData?.level || 1;
+  const currentXP = currentUserData?.xp || 0;
+  const nextLevelXP = currentUserData?.xpToNextLevel || 500;
   const progressPct = (currentXP / nextLevelXP) * 100;
   const xpToNext = nextLevelXP - currentXP;
   const earnedBadges = badges.filter((b) => b.earned).length;
