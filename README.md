@@ -97,6 +97,4 @@ Kontribusi dan saran diterima. Proyek ini dibuat sebagai bagian dari ProgramMaga
 
 ---
 
-**Status**: 🚧 In Development
-
-Untuk pertanyaan atau bantuan push, kirimkan URL repository Anda.
+**Status**: 🚧 In Development.
