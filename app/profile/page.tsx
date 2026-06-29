@@ -437,7 +437,7 @@ export default function ProfilePage() {
               </div>
               <div>
                 <h3 className="font-display font-bold text-surface-900 text-base mb-1">
-                  Akun Google Terhubung ✓
+                  Akun Mu Terhubung ✓
                 </h3>
                 <p className="text-sm text-surface-500 leading-relaxed">
                   Progresmu tersimpan dengan aman di cloud. Kamu bisa login dari perangkat mana saja

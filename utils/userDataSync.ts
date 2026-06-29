@@ -164,7 +164,14 @@ function firebaseToLocalProfile(
   displayName: string
 ): GuestProfile {
   const moduleProgress = (data.module_progress as Record<string, ModuleResult>) || {};
-  const badges = (data.achievement_badges as Badge[]) || DEFAULT_BADGES.map((b) => ({ ...b, level: 0, unlockedAt: undefined }));
+  const rawBadges = (data.achievement_badges as Badge[]) || [];
+  
+  // Sync badges to match DEFAULT_BADGES exactly (so new badges are added, old ones removed)
+  const badges = DEFAULT_BADGES.map(defaultBadge => {
+    const existingBadge = rawBadges.find(b => b.id === defaultBadge.id);
+    return existingBadge ? { ...defaultBadge, level: existingBadge.level, unlockedAt: existingBadge.unlockedAt } : { ...defaultBadge, level: 0, unlockedAt: undefined };
+  });
+
   const activities = (data.user_activities as ActivityItem[]) || [];
 
   const completedModules = Object.values(moduleProgress).filter((m) => m.completed).length;

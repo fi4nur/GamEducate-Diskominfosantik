@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Shield, Eye, Heart, Lock } from "lucide-react";
+import { Shield, Eye, Heart, Lock, Globe, Fish } from "lucide-react";
 
 const badges = [
   {
@@ -21,20 +21,36 @@ const badges = [
     borderColor: "border-brand-200",
   },
   {
+    icon: Globe,
+    name: "Digital Citizen",
+    earned: true,
+    color: "text-emerald-500",
+    bgColor: "bg-emerald-50",
+    borderColor: "border-emerald-200",
+  },
+  {
     icon: Heart,
     name: "Kindness Hero",
-    earned: true,
+    earned: false,
     color: "text-rose-500",
     bgColor: "bg-rose-50",
     borderColor: "border-rose-200",
   },
   {
     icon: Lock,
-    name: "???",
+    name: "Privacy Guard",
     earned: false,
-    color: "text-surface-400",
-    bgColor: "bg-surface-100",
-    borderColor: "border-surface-200",
+    color: "text-violet-500",
+    bgColor: "bg-violet-50",
+    borderColor: "border-violet-200",
+  },
+  {
+    icon: Fish,
+    name: "Phishing Detector",
+    earned: false,
+    color: "text-cyan-500",
+    bgColor: "bg-cyan-50",
+    borderColor: "border-cyan-200",
   },
 ];
 
@@ -99,7 +115,7 @@ export default function ProgressSection() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-80px" }}
-            className="grid grid-cols-2 gap-4"
+            className="grid grid-cols-2 md:grid-cols-3 gap-4"
           >
             {badges.map((badge, idx) => {
               const Icon = badge.icon;

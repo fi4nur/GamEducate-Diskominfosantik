@@ -3,9 +3,11 @@
 import { motion } from "framer-motion";
 import {
   Shield,
-  Award,
+  Eye,
+  Globe,
+  Heart,
   Lock,
-  Wifi,
+  Fish,
   Trophy,
   Star,
   TrendingUp,
@@ -19,36 +21,64 @@ import { onAuthStateChanged } from "firebase/auth";
 import { ref, get } from "firebase/database";
 import { getProfile, type GuestProfile } from "@/data/profileData";
 import { FirebaseUserProfile } from "@/utils/userDataSync";
-
 const badgesTemplate = [
-  { icon: Shield, label: "Penjaga Privasi", earned: false, color: "from-brand-600 to-brand-800" },
-  { icon: Award, label: "Etika Emas", earned: false, color: "from-brand-500 to-brand-700" },
-  { icon: Lock, label: "Pemburu Hoax", earned: false, color: "from-surface-400 to-surface-600" },
-  { icon: Wifi, label: "Master Koneksi", earned: false, color: "from-surface-400 to-surface-600" },
+  {
+    icon: Shield,
+    label: "Security Ace",
+    earned: false,
+    color: "from-amber-500 to-amber-700",
+  },
+  {
+    icon: Eye,
+    label: "Truth Finder",
+    earned: false,
+    color: "from-brand-600 to-brand-800",
+  },
+  {
+    icon: Globe,
+    label: "Digital Citizen",
+    earned: false,
+    color: "from-emerald-500 to-emerald-700",
+  },
+  {
+    icon: Heart,
+    label: "Kindness Hero",
+    earned: false,
+    color: "from-rose-500 to-rose-700",
+  },
+  {
+    icon: Lock,
+    label: "Privacy Guard",
+    earned: false,
+    color: "from-violet-500 to-violet-700",
+  },
+  {
+    icon: Fish,
+    label: "Phishing Detector",
+    earned: false,
+    color: "from-cyan-500 to-cyan-700",
+  },
 ];
-
 const rankMedalColors: Record<number, string> = {
   1: "text-accent-400",
   2: "text-surface-400",
   3: "text-amber-600",
 };
-
 export default function LeaderboardPage() {
   const [topThree, setTopThree] = useState<any[]>([]);
   const [leaderboardRows, setLeaderboardRows] = useState<any[]>([]);
   const [currentUserData, setCurrentUserData] = useState<any>(null);
   const [badges, setBadges] = useState(badgesTemplate);
-
   useEffect(() => {
     const fetchLeaderboard = async (currentUid?: string) => {
       try {
-        const dbRef = ref(database, 'users');
+        const dbRef = ref(database, "users");
         const snapshot = await get(dbRef);
         let usersList: any[] = [];
-        
+
         if (snapshot.exists()) {
           const usersObj = snapshot.val();
-          Object.keys(usersObj).forEach(key => {
+          Object.keys(usersObj).forEach((key) => {
             const u = usersObj[key] as FirebaseUserProfile;
             // Calculate XP roughly or just use level to sort
             // In a real app we'd save total XP in Firebase
@@ -65,38 +95,50 @@ export default function LeaderboardPage() {
               level: u.xp_level || 1,
             });
           });
-          
+
           usersList.sort((a, b) => b.xp - a.xp);
         }
-
         // Top 3
-        const top3 = usersList.slice(0, 3).map((u, i) => {
-          let rank = i + 1;
-          // Reorder for podium: 2, 1, 3
-          let podiumRank = i === 0 ? 2 : i === 1 ? 1 : 3;
-          let actualUser = usersList[podiumRank - 1] || u;
-          if (!actualUser) return null;
-          
-          return {
-            rank: podiumRank,
-            name: actualUser.name,
-            xp: actualUser.xp,
-            avatarColor: podiumRank === 1 ? "from-brand-500 to-brand-800" : "from-surface-300 to-surface-500",
-            initials: actualUser.name.substring(0, 2).toUpperCase(),
-            borderColor: podiumRank === 1 ? "border-accent-400" : podiumRank === 2 ? "border-surface-300" : "border-brand-300",
-            highlight: podiumRank === 1,
-            size: podiumRank === 1 ? "large" : "small",
-          };
-        }).filter(Boolean);
-        
+        const top3 = usersList
+          .slice(0, 3)
+          .map((u, i) => {
+            let rank = i + 1;
+            // Reorder for podium: 2, 1, 3
+            let podiumRank = i === 0 ? 2 : i === 1 ? 1 : 3;
+            let actualUser = usersList[podiumRank - 1] || u;
+            if (!actualUser) return null;
+
+            return {
+              rank: podiumRank,
+              name: actualUser.name,
+              xp: actualUser.xp,
+              avatarColor:
+                podiumRank === 1
+                  ? "from-brand-500 to-brand-800"
+                  : "from-surface-300 to-surface-500",
+              initials: actualUser.name.substring(0, 2).toUpperCase(),
+              borderColor:
+                podiumRank === 1
+                  ? "border-accent-400"
+                  : podiumRank === 2
+                    ? "border-surface-300"
+                    : "border-brand-300",
+              highlight: podiumRank === 1,
+              size: podiumRank === 1 ? "large" : "small",
+            };
+          })
+          .filter(Boolean);
+
         // Re-sort top3 array to be [2nd, 1st, 3rd] for display
         const displayTop3 = [];
-        if (top3.find(u => u?.rank === 2)) displayTop3.push(top3.find(u => u?.rank === 2));
-        if (top3.find(u => u?.rank === 1)) displayTop3.push(top3.find(u => u?.rank === 1));
-        if (top3.find(u => u?.rank === 3)) displayTop3.push(top3.find(u => u?.rank === 3));
-        
-        setTopThree(displayTop3);
+        if (top3.find((u) => u?.rank === 2))
+          displayTop3.push(top3.find((u) => u?.rank === 2));
+        if (top3.find((u) => u?.rank === 1))
+          displayTop3.push(top3.find((u) => u?.rank === 1));
+        if (top3.find((u) => u?.rank === 3))
+          displayTop3.push(top3.find((u) => u?.rank === 3));
 
+        setTopThree(displayTop3);
         // Rows
         const rows = usersList.slice(3, 10).map((u, i) => ({
           rank: i + 4,
@@ -106,19 +148,17 @@ export default function LeaderboardPage() {
           isCurrentUser: u.uid === currentUid,
         }));
         setLeaderboardRows(rows);
-
         if (currentUid) {
-          const myUser = usersList.find(u => u.uid === currentUid);
+          const myUser = usersList.find((u) => u.uid === currentUid);
           if (myUser) setCurrentUserData(myUser);
         }
       } catch (err) {
         console.error("Error fetching leaderboard", err);
       }
     };
-
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       fetchLeaderboard(user?.uid);
-      
+
       // Local profile for current user badges & progress
       const localProfile = getProfile();
       if (localProfile) {
@@ -126,33 +166,36 @@ export default function LeaderboardPage() {
           setCurrentUserData({
             level: localProfile.level,
             xp: localProfile.xp,
-            xpToNextLevel: localProfile.xpToNextLevel
+            xpToNextLevel: localProfile.xpToNextLevel,
           });
         }
-        
-        const earnedCount = localProfile.badges.filter(b => b.level > 0).length;
-        setBadges(badgesTemplate.map((b, i) => ({
-          ...b,
-          earned: i < earnedCount,
-          color: i < earnedCount ? "from-brand-600 to-brand-800" : "from-surface-400 to-surface-600"
-        })));
+
+        const earnedCount = localProfile.badges.filter(
+          (b) => b.level > 0,
+        ).length;
+        setBadges(
+          badgesTemplate.map((b, i) => ({
+            ...b,
+            earned: i < earnedCount,
+            color:
+              i < earnedCount
+                ? "from-brand-600 to-brand-800"
+                : "from-surface-400 to-surface-600",
+          })),
+        );
       }
     });
-
     return () => unsubscribe();
   }, []);
-
   const userLevel = currentUserData?.level || 1;
   const currentXP = currentUserData?.xp || 0;
   const nextLevelXP = currentUserData?.xpToNextLevel || 500;
   const progressPct = (currentXP / nextLevelXP) * 100;
   const xpToNext = nextLevelXP - currentXP;
   const earnedBadges = badges.filter((b) => b.earned).length;
-
   return (
     <main className="min-h-screen bg-surface-50">
       <Navbar activePage="leaderboard" />
-
       {/* Page Header */}
       <section className="bg-white border-b border-surface-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
@@ -171,7 +214,6 @@ export default function LeaderboardPage() {
           </motion.div>
         </div>
       </section>
-
       {/* Main Content */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="flex flex-col lg:flex-row gap-6">
@@ -203,7 +245,6 @@ export default function LeaderboardPage() {
                     >
                       {player.rank}
                     </div>
-
                     {/* Avatar */}
                     <div
                       className={`relative ${
@@ -230,7 +271,6 @@ export default function LeaderboardPage() {
                         </div>
                       )}
                     </div>
-
                     {/* Name & XP */}
                     <p
                       className={`font-display font-bold text-surface-900 text-center ${
@@ -246,7 +286,6 @@ export default function LeaderboardPage() {
                 ))}
               </div>
             </div>
-
             {/* Table Header */}
             <div className="px-6 py-3 grid grid-cols-[80px_1fr_auto] gap-4 border-b border-surface-100">
               <span className="text-xs font-extrabold uppercase tracking-widest text-surface-400">
@@ -259,7 +298,6 @@ export default function LeaderboardPage() {
                 Skor Total
               </span>
             </div>
-
             {/* Rows */}
             <div className="divide-y divide-surface-50">
               {leaderboardRows.map((row, i) => (
@@ -280,7 +318,9 @@ export default function LeaderboardPage() {
                     {row.rank <= 3 ? (
                       <Medal
                         size={18}
-                        className={rankMedalColors[row.rank] || "text-surface-400"}
+                        className={
+                          rankMedalColors[row.rank] || "text-surface-400"
+                        }
                       />
                     ) : (
                       <span className="text-surface-500 font-bold text-sm w-5 text-center">
@@ -288,7 +328,6 @@ export default function LeaderboardPage() {
                       </span>
                     )}
                   </div>
-
                   {/* Player */}
                   <div className="flex items-center gap-3">
                     <div
@@ -318,7 +357,6 @@ export default function LeaderboardPage() {
                       <p className="text-xs text-surface-400">{row.subtitle}</p>
                     </div>
                   </div>
-
                   {/* XP */}
                   <span
                     className={`font-display font-bold text-sm ${
@@ -331,7 +369,6 @@ export default function LeaderboardPage() {
               ))}
             </div>
           </motion.div>
-
           {/* Right: Sidebar */}
           <div className="lg:w-80 xl:w-96 flex flex-col gap-5">
             {/* Badges Card */}
@@ -349,7 +386,6 @@ export default function LeaderboardPage() {
                   {earnedBadges}/{badges.length} Selesai
                 </span>
               </div>
-
               <div className="grid grid-cols-2 gap-3">
                 {badges.map((badge, i) => {
                   const Icon = badge.icon;
@@ -383,7 +419,6 @@ export default function LeaderboardPage() {
                   );
                 })}
               </div>
-
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.97 }}
@@ -392,7 +427,6 @@ export default function LeaderboardPage() {
                 Main terus untuk kumpulkan semua lencana!
               </motion.button>
             </motion.div>
-
             {/* Level Progress Card */}
             <motion.div
               initial={{ opacity: 0, x: 30 }}
@@ -402,7 +436,6 @@ export default function LeaderboardPage() {
             >
               {/* Background glow */}
               <div className="absolute top-0 right-0 w-32 h-32 bg-brand-400/30 rounded-full blur-2xl" />
-
               <div className="relative z-10">
                 <div className="flex items-center gap-2 mb-2">
                   <TrendingUp size={14} className="text-accent-300" />
@@ -410,7 +443,6 @@ export default function LeaderboardPage() {
                     Progress Level
                   </span>
                 </div>
-
                 <div className="flex items-end gap-2 mb-4">
                   <h3 className="font-display text-4xl font-extrabold">
                     Level {userLevel}
@@ -420,7 +452,6 @@ export default function LeaderboardPage() {
                     className="text-accent-400 mb-1 fill-accent-400"
                   />
                 </div>
-
                 {/* XP Bar */}
                 <div className="w-full h-3 bg-white/20 rounded-full overflow-hidden mb-2">
                   <motion.div
@@ -430,7 +461,6 @@ export default function LeaderboardPage() {
                     transition={{ delay: 0.7, duration: 1.2, ease: "easeOut" }}
                   />
                 </div>
-
                 <p className="text-sm text-white/70">
                   {xpToNext} XP lagi menuju Level {userLevel + 1}
                 </p>
@@ -439,7 +469,6 @@ export default function LeaderboardPage() {
           </div>
         </div>
       </section>
-
       <Footer />
     </main>
   );

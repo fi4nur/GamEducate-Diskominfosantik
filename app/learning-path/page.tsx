@@ -5,8 +5,8 @@ import {
   Lock,
   Shield,
   Eye,
-  MessageSquare,
-  EyeOff,
+  Globe,
+  Heart,
   Fish,
   PlayCircle,
   CheckCircle2,
@@ -27,7 +27,7 @@ const missions = [
   {
     id: 1,
     slug: "keamanan-password",
-    icon: Lock,
+    icon: Shield,
     difficulty: "Mudah",
     difficultyColor: "bg-accent-200 text-amber-700",
     duration: "15 Menit",
@@ -49,7 +49,7 @@ const missions = [
   {
     id: 3,
     slug: "jejak-digital",
-    icon: Shield,
+    icon: Globe,
     difficulty: "Mudah",
     difficultyColor: "bg-accent-200 text-amber-700",
     duration: "10 Menit",
@@ -60,7 +60,7 @@ const missions = [
   {
     id: 4,
     slug: "etika-chatting",
-    icon: MessageSquare,
+    icon: Heart,
     difficulty: "Mudah",
     difficultyColor: "bg-accent-200 text-amber-700",
     duration: "15 Menit",
@@ -71,7 +71,7 @@ const missions = [
   {
     id: 5,
     slug: "privasi-data",
-    icon: EyeOff,
+    icon: Lock,
     difficulty: "Sedang",
     difficultyColor: "bg-orange-100 text-orange-700",
     duration: "25 Menit",

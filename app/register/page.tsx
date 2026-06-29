@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ShieldCheck } from 'lucide-react'
-import { signInWithPopup, GoogleAuthProvider, sendSignInLinkToEmail } from 'firebase/auth'
+import { signInWithPopup, GoogleAuthProvider, sendSignInLinkToEmail, signInAnonymously } from 'firebase/auth'
 import { auth } from '@/utils/firebase/client'
 
 export default function RegisterPage() {
@@ -43,6 +43,18 @@ export default function RegisterPage() {
     } catch (error: any) {
       setMessage(`Error: ${error.message}`)
     } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleAnonymousRegister = async () => {
+    setLoading(true)
+    try {
+      await signInAnonymously(auth)
+      router.push('/learning-path')
+    } catch (error: any) {
+      console.error('Error registering anonymously:', error.message)
+      setMessage(`Error: ${error.message}`)
       setLoading(false)
     }
   }
@@ -118,6 +130,23 @@ export default function RegisterPage() {
               </p>
             )}
           </form>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200"></div>
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="bg-white px-4 text-slate-400 font-medium tracking-wider">ATAU</span>
+            </div>
+          </div>
+
+          <button
+            onClick={handleAnonymousRegister}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-3 bg-slate-100 border border-slate-300 rounded-full py-3 px-4 hover:bg-slate-200 transition-colors font-medium text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Lanjut sebagai Anonim
+          </button>
 
           <div className="mt-8 bg-slate-50 border border-slate-100 rounded-xl p-4 flex gap-3">
             <ShieldCheck className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />

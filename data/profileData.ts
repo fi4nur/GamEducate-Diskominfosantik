@@ -43,15 +43,6 @@ export interface GuestProfile {
 // ─── Default Badges ───────────────────────────────────────────
 export const DEFAULT_BADGES: Badge[] = [
   {
-    id: "truth-finder",
-    name: "Truth Finder",
-    icon: "Eye",
-    level: 0,
-    maxLevel: 5,
-    description: "Berhasil mengidentifikasi informasi hoax",
-    color: "brand",
-  },
-  {
     id: "security-ace",
     name: "Security Ace",
     icon: "Shield",
@@ -59,6 +50,24 @@ export const DEFAULT_BADGES: Badge[] = [
     maxLevel: 5,
     description: "Menguasai keamanan digital dasar",
     color: "amber",
+  },
+  {
+    id: "truth-finder",
+    name: "Truth Finder",
+    icon: "Eye",
+    level: 0,
+    maxLevel: 5,
+    description: "Ahli memverifikasi fakta dan hoax",
+    color: "brand",
+  },
+  {
+    id: "digital-citizen",
+    name: "Digital Citizen",
+    icon: "Globe",
+    level: 0,
+    maxLevel: 5,
+    description: "Warga digital yang bertanggung jawab",
+    color: "emerald",
   },
   {
     id: "kindness-hero",
@@ -86,15 +95,6 @@ export const DEFAULT_BADGES: Badge[] = [
     maxLevel: 5,
     description: "Mengenali upaya phishing dan penipuan",
     color: "cyan",
-  },
-  {
-    id: "digital-citizen",
-    name: "Digital Citizen",
-    icon: "Globe",
-    level: 0,
-    maxLevel: 5,
-    description: "Warga digital yang bertanggung jawab",
-    color: "emerald",
   },
 ];
 
@@ -158,7 +158,18 @@ export function getProfile(): GuestProfile {
   if (typeof window === "undefined") return DEFAULT_GUEST_PROFILE;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as GuestProfile;
+    if (raw) {
+      const parsed = JSON.parse(raw) as GuestProfile;
+      
+      // Sync badges to ensure old/removed badges in localStorage don't appear
+      parsed.badges = DEFAULT_BADGES.map(defaultBadge => {
+        const existingBadge = parsed.badges.find(b => b.id === defaultBadge.id);
+        return existingBadge ? { ...defaultBadge, level: existingBadge.level, unlockedAt: existingBadge.unlockedAt } : defaultBadge;
+      });
+      parsed.stats.modulesTotal = DEFAULT_GUEST_PROFILE.stats.modulesTotal;
+      
+      return parsed;
+    }
   } catch {
     // corrupted data — reset
   }
