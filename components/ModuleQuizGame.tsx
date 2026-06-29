@@ -19,7 +19,8 @@ import { useRouter } from "next/navigation";
 import { moduleQuizzes, type ModuleQuestion, type ModuleQuiz } from "@/data/moduleQuizData";
 import { getProfile, saveProfile, type GuestProfile, type ActivityItem } from "@/data/profileData";
 import { auth } from "@/utils/firebase/client";
-import { saveUserProgress, type ModuleResult } from "@/utils/userDataSync";
+import { saveUserProgress, type ModuleResult, calculateDailyStreak, getStreakBonusXp } from "@/utils/userDataSync";
+import { shuffleModuleQuestions } from "@/utils/quizShuffle";
 
 interface ModuleQuizGameProps {
   moduleSlug: string;
@@ -41,9 +42,17 @@ export default function ModuleQuizGame({ moduleSlug }: ModuleQuizGameProps) {
   const [streak, setStreak] = useState(0);
   const [feedbackShake, setFeedbackShake] = useState(false);
   const [showTip, setShowTip] = useState(false);
+  const [shuffledQuestions, setShuffledQuestions] = useState<ModuleQuestion[]>([]);
 
   // Timer to track real learning time
   const startTimeRef = useRef<number>(Date.now());
+
+  // Initialize shuffled questions on mount
+  useEffect(() => {
+    if (quiz?.questions) {
+      setShuffledQuestions(shuffleModuleQuestions(quiz.questions));
+    }
+  }, [quiz]);
 
   // If slug doesn't match any quiz
   if (!quiz) {
@@ -58,14 +67,13 @@ export default function ModuleQuizGame({ moduleSlug }: ModuleQuizGameProps) {
     );
   }
 
-  const questions = quiz.questions;
-  const question = questions[currentIdx];
+  const question = shuffledQuestions[currentIdx];
   const completedCount = currentIdx;
-  const totalQuestions = questions.length;
+  const totalQuestions = shuffledQuestions.length;
 
   const handleAnswer = useCallback(
     (optionIdx: number) => {
-      if (phase !== "playing") return;
+      if (phase !== "playing" || !question) return;
       setSelectedIdx(optionIdx);
       const isCorrect = optionIdx === question.correctIndex;
 
@@ -143,11 +151,23 @@ export default function ModuleQuizGame({ moduleSlug }: ModuleQuizGameProps) {
           profile.stats.modulesCompleted += 1;
         }
 
+        // Calculate daily streak
+        const { newStreak, isNewDay } = calculateDailyStreak(profile.streak, profile.lastQuizDate);
+        
+        let bonusXp = 0;
+        if (isNewDay) {
+          profile.streak = newStreak;
+          profile.lastQuizDate = new Date().toISOString();
+          bonusXp = getStreakBonusXp(newStreak);
+        }
+
+        const totalEarnedXp = score + bonusXp;
+
         // Add XP and handle level up
-        profile.xp += score;
-        if (profile.xp >= profile.xpToNextLevel) {
+        profile.xp += totalEarnedXp;
+        while (profile.xp >= profile.xpToNextLevel) {
           profile.level += 1;
-          profile.xp = profile.xp - profile.xpToNextLevel;
+          profile.xp -= profile.xpToNextLevel;
           profile.xpToNextLevel = Math.round(profile.xpToNextLevel * 1.25);
         }
 
@@ -186,7 +206,7 @@ export default function ModuleQuizGame({ moduleSlug }: ModuleQuizGameProps) {
         profile.activities.unshift({
           id: `act_mod_${Date.now()}`,
           title: `Selesai Modul: ${quiz.moduleTitle}`,
-          description: `Memperoleh ${score} XP dengan tingkat akurasi ${Math.round((correctCount / totalQuestions) * 100)}%.`,
+          description: `Memperoleh ${score} XP${bonusXp > 0 ? ` + ${bonusXp} Streak Bonus` : ""} dengan tingkat akurasi ${Math.round((correctCount / totalQuestions) * 100)}%.`,
           timestamp: new Date().toISOString(),
           type: "module_complete"
         });
@@ -220,9 +240,14 @@ export default function ModuleQuizGame({ moduleSlug }: ModuleQuizGameProps) {
     setCorrectCount(0);
     setStreak(0);
     startTimeRef.current = Date.now(); // Reset timer
+    if (quiz?.questions) {
+      setShuffledQuestions(shuffleModuleQuestions(quiz.questions));
+    }
   };
 
-  const isCorrectAnswer = selectedIdx === question.correctIndex;
+  if (!question && phase === "playing") return null;
+
+  const isCorrectAnswer = selectedIdx === question?.correctIndex;
   const progressPercent = Math.round((completedCount / totalQuestions) * 100);
 
   /* ── GAME OVER ── */

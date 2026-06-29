@@ -37,6 +37,7 @@ export interface GuestProfile {
   badges: Badge[];
   activities: ActivityItem[];
   createdAt: string;
+  lastQuizDate?: string; // ISO date string for daily streak tracking
 }
 
 // ─── Default Badges ───────────────────────────────────────────
@@ -45,20 +46,18 @@ export const DEFAULT_BADGES: Badge[] = [
     id: "truth-finder",
     name: "Truth Finder",
     icon: "Eye",
-    level: 3,
+    level: 0,
     maxLevel: 5,
     description: "Berhasil mengidentifikasi informasi hoax",
-    unlockedAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
     color: "brand",
   },
   {
     id: "security-ace",
     name: "Security Ace",
     icon: "Shield",
-    level: 2,
+    level: 0,
     maxLevel: 5,
     description: "Menguasai keamanan digital dasar",
-    unlockedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
     color: "amber",
   },
   {
@@ -134,21 +133,22 @@ export const DEFAULT_ACTIVITIES: ActivityItem[] = [
 // ─── Default Guest Profile ───────────────────────────────────
 export const DEFAULT_GUEST_PROFILE: GuestProfile = {
   displayName: "Agen Tamu #123",
-  title: "Digital Guardian",
-  level: 12,
-  xp: 2450,
-  xpToNextLevel: 3000,
-  streak: 14,
-  globalRank: 42,
+  title: "Pemula Digital",
+  level: 1,
+  xp: 0,
+  xpToNextLevel: 500,
+  streak: 0,
+  globalRank: 0,
   stats: {
-    modulesCompleted: 4,
-    modulesTotal: 12,
-    quizAccuracy: 85,
-    learningTimeMinutes: 120,
+    modulesCompleted: 0,
+    modulesTotal: 6,
+    quizAccuracy: 0,
+    learningTimeMinutes: 0,
   },
   badges: DEFAULT_BADGES,
   activities: DEFAULT_ACTIVITIES,
-  createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+  createdAt: new Date().toISOString(),
+  lastQuizDate: undefined,
 };
 
 // ─── LocalStorage Helpers ─────────────────────────────────────

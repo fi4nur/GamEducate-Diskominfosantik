@@ -22,6 +22,7 @@ export interface FirebaseUserProfile {
   achievement_badges: Badge[];
   xp_level: number;
   streaks: number;
+  last_quiz_date: string | null; // ISO date for daily streak tracking
   updated_at: string;
 }
 
@@ -36,6 +37,58 @@ export interface ModuleResult {
 const STORAGE_KEY = "gameducate_profile";
 const QUIZ_RESULTS_KEY = "gameducate_quiz_results";
 const TOTAL_MODULES = 6;
+
+// ─── Daily Streak Helpers ─────────────────────────────────────
+/**
+ * Calculate the new streak value based on the last quiz date.
+ * - Same day: streak unchanged (already counted today)
+ * - Yesterday: streak + 1 (consecutive day)
+ * - Older: reset to 1 (streak broken, starting fresh today)
+ * - No previous date: start at 1
+ */
+export function calculateDailyStreak(
+  currentStreak: number,
+  lastQuizDate: string | null | undefined
+): { newStreak: number; isNewDay: boolean } {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (!lastQuizDate) {
+    return { newStreak: 1, isNewDay: true };
+  }
+
+  const lastDate = new Date(lastQuizDate);
+  lastDate.setHours(0, 0, 0, 0);
+
+  const diffMs = today.getTime() - lastDate.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) {
+    // Same day — no change
+    return { newStreak: currentStreak, isNewDay: false };
+  } else if (diffDays === 1) {
+    // Consecutive day — increment
+    return { newStreak: currentStreak + 1, isNewDay: true };
+  } else {
+    // Streak broken — reset
+    return { newStreak: 1, isNewDay: true };
+  }
+}
+
+/**
+ * Get bonus XP based on streak tier.
+ * streak 3+  = +20 XP
+ * streak 7+  = +50 XP
+ * streak 14+ = +100 XP
+ * streak 30+ = +200 XP
+ */
+export function getStreakBonusXp(streak: number): number {
+  if (streak >= 30) return 200;
+  if (streak >= 14) return 100;
+  if (streak >= 7) return 50;
+  if (streak >= 3) return 20;
+  return 0;
+}
 
 // ─── Fresh Profile for New User ───────────────────────────────
 function createFreshProfile(displayName: string): GuestProfile {
@@ -71,6 +124,7 @@ function createFreshProfile(displayName: string): GuestProfile {
     badges: freshBadges,
     activities: [joinedActivity],
     createdAt: new Date().toISOString(),
+    lastQuizDate: undefined,
   };
 }
 
@@ -167,6 +221,7 @@ function firebaseToLocalProfile(
             },
           ],
     createdAt: data.updated_at || new Date().toISOString(),
+    lastQuizDate: data.last_quiz_date || undefined,
   };
 }
 
@@ -202,6 +257,7 @@ export async function initNewUserData(
     achievement_badges: freshBadges,
     xp_level: 1,
     streaks: 0,
+    last_quiz_date: null,
     updated_at: new Date().toISOString(),
   });
 }
@@ -221,6 +277,7 @@ export async function saveUserProgress(
     achievement_badges: profile.badges,
     xp_level: profile.level,
     streaks: profile.streak,
+    last_quiz_date: profile.lastQuizDate || null,
     updated_at: new Date().toISOString(),
   });
 }

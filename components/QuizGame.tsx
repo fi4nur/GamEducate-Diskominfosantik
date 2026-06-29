@@ -19,7 +19,11 @@ import {
   Flame,
   BadgeCheck,
 } from "lucide-react";
-import { quizQuestions, MAX_LIVES, type Answer } from "@/data/quizData";
+import { quizQuestions, MAX_LIVES, type Answer, type QuizQuestion } from "@/data/quizData";
+import { getProfile, saveProfile } from "@/data/profileData";
+import { calculateDailyStreak, getStreakBonusXp, saveUserProgress } from "@/utils/userDataSync";
+import { auth } from "@/utils/firebase/client";
+import { shuffleStandaloneQuestions } from "@/utils/quizShuffle";
 
 type GamePhase = "playing" | "feedback" | "gameover" | "complete";
 
@@ -33,14 +37,20 @@ export default function QuizGame() {
   const [correctCount, setCorrectCount] = useState(0);
   const [streak, setStreak] = useState(0);
   const [feedbackShake, setFeedbackShake] = useState(false);
+  const [shuffledQuestions, setShuffledQuestions] = useState<QuizQuestion[]>([]);
 
-  const question = quizQuestions[currentIdx];
+  // Initialize shuffled questions once on mount
+  useEffect(() => {
+    setShuffledQuestions(shuffleStandaloneQuestions(quizQuestions));
+  }, []);
+
+  const question = shuffledQuestions[currentIdx];
   const completedCount = currentIdx;
   const totalQuestions = quizQuestions.length;
 
   const handleAnswer = useCallback(
     (answer: Answer) => {
-      if (phase !== "playing") return;
+      if (phase !== "playing" || !question) return;
       setSelectedAnswer(answer);
       setShowTip(false);
       const isCorrect = answer === question.answer;
@@ -93,9 +103,71 @@ export default function QuizGame() {
     setShowTip(false);
     setCorrectCount(0);
     setStreak(0);
+    setShuffledQuestions(shuffleStandaloneQuestions(quizQuestions));
   };
 
-  const isCorrectAnswer = selectedAnswer === question.answer;
+  // ─── COMPLETE LOGIC ───────────────────────────────────────────
+  useEffect(() => {
+    if (phase === "complete") {
+      const saveQuizData = async () => {
+        const profile = getProfile();
+        if (!profile) return;
+
+        // Calculate daily streak
+        const { newStreak, isNewDay } = calculateDailyStreak(profile.streak, profile.lastQuizDate);
+        
+        let bonusXp = 0;
+        if (isNewDay) {
+          profile.streak = newStreak;
+          profile.lastQuizDate = new Date().toISOString();
+          bonusXp = getStreakBonusXp(newStreak);
+        }
+
+        const totalEarnedXp = score + bonusXp;
+
+        // Add XP to profile
+        profile.xp += totalEarnedXp;
+        while (profile.xp >= profile.xpToNextLevel) {
+          profile.level += 1;
+          profile.xp -= profile.xpToNextLevel;
+          profile.xpToNextLevel = Math.round(profile.xpToNextLevel * 1.25);
+        }
+
+        // Add activity
+        profile.activities.unshift({
+          id: `act_quiz_${Date.now()}`,
+          title: "Selesai Latihan Detektif Hoax",
+          description: `Memperoleh ${score} XP${bonusXp > 0 ? ` + ${bonusXp} Streak Bonus` : ""} dengan skor benar ${correctCount}/${totalQuestions}.`,
+          timestamp: new Date().toISOString(),
+          type: "quiz_score",
+        });
+
+        // Slice to latest 10
+        profile.activities = profile.activities.slice(0, 10);
+
+        saveProfile(profile);
+
+        // Sync to Firebase if logged in
+        try {
+          const currentUser = auth.currentUser;
+          if (currentUser) {
+            // we don't update module_progress here since this is standalone quiz
+            const storedResults = localStorage.getItem("gameducate_quiz_results");
+            const quizResults = storedResults ? JSON.parse(storedResults) : {};
+            await saveUserProgress(currentUser.uid, profile, quizResults);
+          }
+        } catch (err) {
+          console.error("Failed to sync standalone quiz progress:", err);
+        }
+      };
+
+      saveQuizData();
+    }
+  }, [phase, score, correctCount, totalQuestions]);
+
+  if (!question && phase === "playing") return null;
+
+  const isCorrectAnswer = selectedAnswer === question?.answer;
   const progressPercent = Math.round((completedCount / totalQuestions) * 100);
 
   /* ── GAME OVER ── */

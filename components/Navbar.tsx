@@ -4,10 +4,11 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Search, User, LogIn, LogOut, ChevronDown } from "lucide-react";
+import { Menu, X, Search, User, LogIn, LogOut, ChevronDown, Command } from "lucide-react";
 import { auth } from "@/utils/firebase/client";
 import { onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
 import { handleLogout } from "@/utils/userDataSync";
+import { moduleQuizzes } from "@/data/moduleQuizData";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -24,6 +25,8 @@ interface NavbarProps {
 export default function Navbar({ activePage }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [loggingOut, setLoggingOut] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
@@ -47,6 +50,18 @@ export default function Navbar({ activePage }: NavbarProps) {
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Keyboard shortcut Ctrl+K
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   const onLogout = async () => {
@@ -117,10 +132,16 @@ export default function Navbar({ activePage }: NavbarProps) {
           {/* Right Side */}
           <div className="hidden md:flex items-center gap-3">
             {/* Search */}
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-surface-50 border border-surface-200 rounded-lg text-surface-400 text-sm hover:border-brand-300 transition-colors cursor-pointer">
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="flex items-center gap-2 px-3 py-1.5 bg-surface-50 border border-surface-200 rounded-lg text-surface-400 text-sm hover:border-brand-300 transition-colors"
+            >
               <Search size={14} />
-              <span className="hidden lg:inline text-xs">Cari Modul ...</span>
-            </div>
+              <span className="hidden lg:inline text-xs">Cari Modul...</span>
+              <span className="hidden lg:flex items-center gap-0.5 ml-2 px-1.5 py-0.5 bg-surface-100 rounded text-[10px] font-bold">
+                <Command size={10} /> K
+              </span>
+            </button>
 
             {/* Resources button */}
             <motion.a
@@ -294,6 +315,94 @@ export default function Navbar({ activePage }: NavbarProps) {
                 </a>
               </div>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Search Modal */}
+      <AnimatePresence>
+        {searchOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-surface-900/60 backdrop-blur-sm flex items-start justify-center pt-[10vh] px-4"
+            onClick={() => setSearchOpen(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-surface-200 overflow-hidden flex flex-col max-h-[80vh]"
+            >
+              <div className="flex items-center px-4 border-b border-surface-100 shrink-0">
+                <Search size={20} className="text-brand-500" />
+                <input
+                  type="text"
+                  autoFocus
+                  placeholder="Cari modul (contoh: Password, Hoax...)"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="flex-1 bg-transparent border-none py-4 px-4 text-base focus:outline-none font-medium placeholder:text-surface-400"
+                />
+                <button
+                  onClick={() => setSearchOpen(false)}
+                  className="p-1 rounded-md hover:bg-surface-100 text-surface-400 transition"
+                >
+                  <span className="text-xs font-bold px-1.5 py-0.5 rounded border border-surface-200">ESC</span>
+                </button>
+              </div>
+
+              <div className="overflow-y-auto p-4 custom-scrollbar">
+                {Object.values(moduleQuizzes)
+                  .filter(
+                    (m) =>
+                      m.moduleTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      m.moduleDescription?.toLowerCase().includes(searchQuery.toLowerCase())
+                  )
+                  .map((mod) => (
+                    <Link
+                      href={`/learning-path/quiz/${mod.moduleSlug}`}
+                      key={mod.moduleId}
+                      onClick={() => {
+                        sessionStorage.setItem("fromLearningPath", "true");
+                        setSearchOpen(false);
+                      }}
+                      className="flex items-center gap-4 p-4 hover:bg-surface-50 rounded-xl transition-colors group cursor-pointer border border-transparent hover:border-surface-200 mb-2"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0 group-hover:bg-brand-100 transition-colors">
+                        <Search size={16} className="text-brand-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-display font-bold text-surface-900 group-hover:text-brand-700 truncate transition-colors">
+                          {mod.moduleTitle}
+                        </h4>
+                        <p className="text-xs text-surface-500 line-clamp-1">
+                          {mod.moduleDescription}
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+                
+                {searchQuery && Object.values(moduleQuizzes).filter((m) =>
+                  m.moduleTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  m.moduleDescription?.toLowerCase().includes(searchQuery.toLowerCase())
+                ).length === 0 && (
+                  <div className="py-12 text-center text-surface-400">
+                    <Search size={32} className="mx-auto mb-3 text-surface-300" />
+                    <p className="font-medium">Tidak ada modul yang ditemukan.</p>
+                    <p className="text-xs mt-1">Coba kata kunci lain.</p>
+                  </div>
+                )}
+
+                {!searchQuery && (
+                  <div className="py-8 text-center text-surface-400">
+                    <p className="font-medium text-sm">Ketik untuk mulai mencari...</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

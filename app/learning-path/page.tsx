@@ -11,6 +11,7 @@ import {
   PlayCircle,
   CheckCircle2,
   ArrowRight,
+  Search,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -94,6 +95,7 @@ const missions = [
 export default function LearningPathPage() {
   const router = useRouter();
   const [completedSlugs, setCompletedSlugs] = useState<Record<string, boolean>>({});
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const readFromLocal = () => {
@@ -152,6 +154,12 @@ export default function LearningPathPage() {
     router.push(`/learning-path/quiz/${slug}`);
   };
 
+  const filteredMissions = missions.filter(
+    (m) =>
+      m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      m.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <main className="min-h-screen bg-surface-50">
       <Navbar activePage="learning-path" />
@@ -205,12 +213,29 @@ export default function LearningPathPage() {
         </div>
       </section>
 
+      {/* Search Bar Section */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 -mb-6">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-surface-400" />
+          </div>
+          <input
+            type="text"
+            className="block w-full pl-12 pr-4 py-4 bg-white border border-surface-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-surface-900 placeholder:text-surface-400 font-medium transition-shadow"
+            placeholder="Cari modul (contoh: Hoax, Password)..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+      </section>
+
       {/* Mission Cards Grid */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {missions.map((mission, i) => {
-            const Icon = mission.icon;
-            const isCompleted = !!completedSlugs[mission.slug];
+        {filteredMissions.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredMissions.map((mission, i) => {
+              const Icon = mission.icon;
+              const isCompleted = !!completedSlugs[mission.slug];
 
             return (
               <motion.div
@@ -279,6 +304,15 @@ export default function LearningPathPage() {
             );
           })}
         </div>
+        ) : (
+          <div className="py-16 text-center text-surface-500 bg-white rounded-2xl border border-surface-200 shadow-sm">
+            <Search size={48} className="mx-auto mb-4 text-surface-300" />
+            <h3 className="text-lg font-bold font-display text-surface-900 mb-1">
+              Modul Tidak Ditemukan
+            </h3>
+            <p>Coba gunakan kata kunci lain untuk mencari modul.</p>
+          </div>
+        )}
       </section>
 
       {/* Challenge CTA Banner */}
