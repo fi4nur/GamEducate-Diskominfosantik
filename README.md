@@ -25,17 +25,53 @@
 
 ---
 
-## 🛠️ Tech Stack & Backend Architecture
+## 🛠️ Tech Stack & Framework Saat Ini
 
-* **Frontend Framework**: Next.js 15 (App Router) & React 19
-* **Programming Language**: TypeScript / JavaScript
-* **Styling**: Tailwind CSS & Vanilla CSS (untuk layout adaptif dan premium)
-* **Animations**: Framer Motion (untuk animasi transisi halaman, micro-interactions, dan efek hover)
-* **Icons**: Lucide React
-* **Backend Database & Auth**:
-  * **Firebase Authentication**: Untuk sistem login dan register pengguna.
+Proyek ini dibangun menggunakan teknologi web modern untuk performa maksimal dan pengalaman pengguna yang optimal. Berikut adalah rincian framework dan library yang digunakan:
+
+* **Frontend Framework**: **Next.js 15.5** (menggunakan *App Router* terbaru untuk performa *Server-Side Rendering* dan *Routing* yang lebih baik) & **React 19.2**.
+* **Programming Language**: **TypeScript** (menjamin keamanan tipe data dan meminimalisir *runtime error*).
+* **Styling**: **Tailwind CSS 3.4** & Vanilla CSS (untuk pembuatan layout yang sangat responsif, adaptif, dan berkesan premium).
+* **Animations**: **Framer Motion 12** (digunakan secara ekstensif untuk animasi transisi antar halaman yang mulus, efek *hover* interaktif, dan *micro-interactions* elemen UI).
+* **Icons**: **Lucide React** (koleksi ikon modern, ringan, dan konsisten).
+* **Backend Database & Authentication**:
+  * **Firebase Authentication (v12.15)**: Menangani alur login dan registrasi (Sign Up) pengguna dengan aman.
   * **Firebase Realtime Database**: Untuk sinkronisasi data profil, statistik belajar, badge, dan aktivitas secara real-time.
-  * **LocalStorage Cache**: Menyimpan data lokal sebagai cadangan (fallback) untuk pengguna mode Guest agar kemajuan belajar tidak hilang meski tidak masuk akun.
+  * **LocalStorage Cache**: Menyimpan data lokal sebagai cadangan (fallback) untuk pengguna mode *Guest* agar kemajuan belajar tidak hilang meski tidak masuk akun.
+
+---
+
+## 📸 Tampilan Antarmuka (UI Showcase)
+
+Berikut adalah pemaparan tampilan dari platform **Gameducate** berdasarkan fitur utamanya:
+
+### 1. Home Page
+![Home Page](./public/Homepage.png)
+> Halaman utama *(landing page)* yang dirancang interaktif. Menampilkan *hero section* yang menyambut pengguna, penjelasan singkat tentang pentingnya literasi digital, dan ajakan (*Call to Action*) untuk mulai berpetualang.
+
+### 2. Login Page
+![Login Page](./public/Loginpage.png)
+> Halaman autentikasi untuk pengguna yang sudah memiliki akun. Dilengkapi dengan validasi form dan integrasi Firebase Auth.
+
+### 3. Sign In / Register Page
+![Sign In Page](./public/SignInpage.png)
+> Halaman pembuatan akun untuk pengguna baru. Dengan membuat akun, pengguna dapat menyimpan seluruh progres belajar, level, XP, dan *badge* mereka di sistem *cloud* (Firebase).
+
+### 4. Learning Path Page
+![Learning Path Page](./public/Learningpathpage.png)
+> Peta jalur petualangan belajar pengguna. Menampilkan urutan modul literasi digital (dari Keamanan Password hingga Phishing Alert) secara visual dan terstruktur layaknya level dalam sebuah game.
+
+### 5. Quiz Page
+![Quiz Page](./public/Quizpage.png)
+> Tampilan antarmuka kuis interaktif. Menghadirkan simulasi kasus di dunia maya (misal: membedakan fakta dan *hoax*). Terdapat *progress bar*, sistem nyawa (❤️), dan opsi jawaban interaktif dengan *feedback* langsung.
+
+### 6. Leaderboard Page
+![Leaderboard Page](./public/Leaderboardpage.png)
+> Papan peringkat global yang real-time. Memotivasi pengguna untuk terus belajar dengan menampilkan peringkat teratas berdasarkan akumulasi poin (XP) yang diperoleh dari menyelesaikan kuis.
+
+### 7. Profile Page
+![Profile Page](./public/Profilepage.png)
+> Pusat dasbor personal pengguna. Menampilkan statistik komprehensif, sisa *XP* menuju level berikutnya, progres penyelesaian modul, aktivitas terakhir, dan koleksi *badge* (lencana) yang telah didapatkan.
 
 ---
 
@@ -194,4 +230,4 @@ flowchart TD
 
 ---
 
-**Status Proyek**: 🚧 In Development (Magang Semester 6).
+**Status Proyek**: ✅ Selesai Tahap 1 (Magang Semester 6).

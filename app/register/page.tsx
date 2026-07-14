@@ -5,11 +5,10 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ShieldCheck } from 'lucide-react'
-import { signInWithPopup, GoogleAuthProvider, sendSignInLinkToEmail, signInAnonymously } from 'firebase/auth'
+import { signInWithPopup, GoogleAuthProvider, signInAnonymously } from 'firebase/auth'
 import { auth } from '@/utils/firebase/client'
 
 export default function RegisterPage() {
-  const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const router = useRouter()
@@ -22,27 +21,6 @@ export default function RegisterPage() {
       router.push('/learning-path')
     } catch (error: any) {
       console.error('Error registering with Google:', error.message)
-      setLoading(false)
-    }
-  }
-
-  const handleEmailRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!email) return
-    setLoading(true)
-    setMessage('')
-    
-    try {
-      const actionCodeSettings = {
-        url: `${window.location.origin}/learning-path`,
-        handleCodeInApp: true,
-      };
-      await sendSignInLinkToEmail(auth, email, actionCodeSettings)
-      window.localStorage.setItem('emailForSignIn', email)
-      setMessage('Tautan login telah dikirim ke email Anda!')
-    } catch (error: any) {
-      setMessage(`Error: ${error.message}`)
-    } finally {
       setLoading(false)
     }
   }
@@ -104,49 +82,19 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          <form onSubmit={handleEmailRegister} className="flex flex-col gap-4">
-            <div>
-              <label htmlFor="email" className="block text-sm text-slate-600 mb-2">Alamat Email</label>
-              <input
-                id="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="nama@email.com"
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg py-3 px-4 text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-700 hover:bg-blue-800 text-white rounded-full py-3 px-4 font-medium transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Memproses...' : 'Lanjut dengan Email'}
-            </button>
-            {message && (
-              <p className="text-sm text-center mt-2 text-green-600 bg-green-50 p-2 rounded-lg">
-                {message}
-              </p>
-            )}
-          </form>
-
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200"></div>
-            </div>
-            <div className="relative flex justify-center text-xs">
-              <span className="bg-white px-4 text-slate-400 font-medium tracking-wider">ATAU</span>
-            </div>
-          </div>
-
           <button
             onClick={handleAnonymousRegister}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-3 bg-slate-100 border border-slate-300 rounded-full py-3 px-4 hover:bg-slate-200 transition-colors font-medium text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-3 bg-slate-100 border border-slate-300 rounded-full py-3 px-4 hover:bg-slate-200 transition-colors font-medium text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed mb-6"
           >
             Lanjut sebagai Anonim
           </button>
+
+          {message && (
+            <p className="text-sm text-center mb-6 text-red-600 bg-red-50 p-2 rounded-lg">
+              {message}
+            </p>
+          )}
 
           <div className="mt-8 bg-slate-50 border border-slate-100 rounded-xl p-4 flex gap-3">
             <ShieldCheck className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
